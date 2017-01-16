@@ -8,7 +8,7 @@ use warnings;
 
 use FindBin;
 
-my $www_dir = $FindBin::Bin . "/www";
+my $www_dir = $FindBin::Bin . "/";
 print("Serving files from: $www_dir\n");
 chdir($www_dir);
 
