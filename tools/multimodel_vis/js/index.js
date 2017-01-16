@@ -5,13 +5,28 @@ require([
     'vis',
     'd3',
 
+    'cytoscape',
+    'cytoscape-panzoom',
+    'cytoscape-cola',
+    'cola',
+    'text!css/graph-style.css',
+
     'text!data.json',
 
     // But don't go until we're ready.
     'domReady'
 ], function($, _,
             Vis, d3,
+            cytoscape,
+            cyPanzoom,
+            cyCola,
+            cola,
+            graphStyle,
             dataText) {
+
+    // Register the pan-zoom plug-in.
+    cyCola(cytoscape, cola);
+    cyPanzoom(cytoscape, $);
 
     // Regex for getting variable name from a piece key.
     var variableRegex = /^(.*?)_\d+_\d+$/;
@@ -109,7 +124,7 @@ require([
         // For now, just redraw the entire element.s
         populateTimeline();
         populateOdeGraph();
-        // populateAutomata();
+        populateAutomata();
     }
 
     // ------------------------------------------------------------
@@ -613,6 +628,98 @@ require([
             populateOdeGraph();
         }, 400);
     });
+
+    // ------------------------------------------------------------
+    // Automata
+
+    function populateAutomata() {
+        if (!data ||
+            !data.drh) {
+            return;
+        }
+
+        var graphLayout =
+            // Built-in, pretty good.
+            // { name: 'cose',
+            //   randomize: true,
+            // };
+            //
+            // See https://github.com/cytoscape/cytoscape.js-cose-bilkent
+            //
+            // { name: 'cose-bilkent',
+            //   randomize: true,
+            //   // This is long enough to, usually, make the labels fit.
+            //   idealEdgeLength: 500,
+            // };
+            {
+                name: 'cola',
+                // The infinite layout continually tries to maintain
+                // positions. This makes interaction really nice. However, if
+                // fit is also enabled, the result it very weird.
+                infinite: true,
+                fit: false,
+                // Increase the space a bit to improve readability.
+                edgeLength: 400,
+            };
+
+        $.each(data.drh, function(name, model) {
+            var heading = $('<h2>').appendTo('#automata');
+            heading.text(name);
+
+            var graphContainer = $('<div>').appendTo('#automata');
+
+            // var elements = [];
+            var elements = getElementsForModel(model);
+            if (0 === elements.length) {
+                $(graphContainer).text("Model has no transitions.");
+                return;
+            }
+
+            // We are going to make an actual link graph, so give the
+            // graph div the right class.
+            graphContainer.addClass('link-graph-container');
+
+            // Create the graph.
+            var cy = cytoscape({
+                container: graphContainer,
+                elements: elements,
+                style: graphStyle,
+                layout: graphLayout,
+            });
+            cy.panzoom();
+        });
+    }
+
+    function getElementsForModel(model) {
+        var elements = [];
+        // console.log(model);
+        $.each(model.modes, function(modeName, modeData) {
+            var modeLabel = modeName;
+            if (modeData.label) {
+                modeLabel = modeData.label;
+            }
+            var element = {
+                data: {
+                    id: modeName,
+                    label: modeLabel,
+                }
+            };
+            elements.push(element);
+
+            $.each(modeData.transitions, function(i, transition) {
+                var link = {
+                    data: {
+                        // id: ?,
+                        source: modeName,
+                        target: transition.dest_mode,
+                        label: transition.name,
+                    }
+                };
+                elements.push(link);
+            });
+        });
+        return elements;
+    }
 
     // ------------------------------------------------------------
     // Data Manipulation
