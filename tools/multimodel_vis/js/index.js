@@ -82,6 +82,10 @@ require([
     // Set up the UI stuff.
     updateUI();
 
+    // Just do this once, and never again. This way the automata will
+    // stay as they are when changing options.
+    populateAutomata();
+
     // ------------------------------------------------------------
     // Set up event handling.
     $('#use-subgroups').click(function() {
@@ -124,7 +128,6 @@ require([
         // For now, just redraw the entire element.s
         populateTimeline();
         populateOdeGraph();
-        populateAutomata();
     }
 
     // ------------------------------------------------------------
@@ -661,6 +664,10 @@ require([
                 // Increase the space a bit to improve readability.
                 edgeLength: 400,
             };
+
+        // Reset the automata section so that we don't keep
+        // duplicating these anytime we update the interface.
+        $('#automata').html('');
 
         $.each(data.drh, function(name, model) {
             var heading = $('<h2>').appendTo('#automata');
